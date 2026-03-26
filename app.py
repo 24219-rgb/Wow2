@@ -26,16 +26,6 @@ if __name__ == '__main__':
 
 
 
-2. 
-
-requirements.txt
-
-
-Flask==3.0.3
-gunicorn==23.0.0
 
 
 
-render 명령어: 
-
-gunicorn app:app
