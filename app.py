@@ -148,3 +148,53 @@ def gemini_param():
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
 
+# --- 여기서부터 MBTI 환상궁합 AI 스킬 코드 ---
+@app.route('/mbti', methods=['POST'])
+def get_mbti_match():
+    # 1. 카카오톡에서 보낸 메시지 데이터 받기
+    kakao_request = request.get_json()
+    user_message = kakao_request['userRequest']['utterance'].strip().upper() # 사용자가 입력한 MBTI (예: INFP)
+
+    # 간단한 MBTI 유효성 검사 (자료구조 리스트 활용!)
+    mbti_list = ["INFJ", "INFP", "INTJ", "INTP", "ISFJ", "ISFP", "ISTJ", "ISTP", 
+                 "ENFJ", "ENFP", "ENTJ", "ENTP", "ESFJ", "ESFP", "ESTJ", "ESTP"]
+    
+    if user_message not in mbti_list:
+        return jsonify({
+            "version": "2.0",
+            "template": {
+                "outputs": [{"simpleText": {"text": "올바른 MBTI 4자리를 입력해주세요! (예: INFP)"}}]
+            }
+        })
+
+    # 2. 인공지능(Gemini)에게 질문 던지기
+    try:
+        # 기존에 설정된 gemini_param 함수나 client가 있다면 그걸 활용해도 되지만, 
+        # 가장 표준적인 방법인 고유 프롬프트로 생성 요청을 보냅니다.
+        prompt = f"너는 MBTI 전문가야. 사용자가 자신의 MBTI를 입력하면, 그 유형과 가장 환상의 궁합(가장 잘 맞는)인 MBTI 유형 하나를 콕 집어 추천하고, 왜 두 유형이 잘 맞는지 3줄 이내로 친절하고 유머러스하게 설명해줘. 내 MBTI는 {user_message}야."
+        
+        # 너의 기존 코드 방식에 맞춰 아래 라인을 사용하거나, 이미 상단에 정의된 client를 사용하면 돼.
+        # 여기서는 가장 대중적인 최신 google-genai 라이브러리 구조 예시를 들었어.
+        from google import genai
+        client = genai.Client() # 상단에 설정되어 있다면 지워도 무방해
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+        )
+        ai_answer = response.text
+    except Exception as e:
+        ai_answer = f"앗, AI 서버에 문제가 생겼어요: {str(e)}"
+
+    # 3. 카카오톡 답변 양식(JSON 트리 구조)에 맞춰서 리턴하기
+    return jsonify({
+        "version": "2.0",
+        "template": {
+            "outputs": [
+                {
+                    "simpleText": {
+                        "text": ai_answer
+                    }
+                }
+            ]
+        }
+    })
