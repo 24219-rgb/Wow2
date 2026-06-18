@@ -4,7 +4,6 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.parse
 import os
-from google import genai
 
 app = Flask(__name__)
 
@@ -62,7 +61,7 @@ def params_check():
     a = user_request.get("timezone", "timezone 없음")
     b = user_request.get("utterance", "utterance 없음")
     c = params.get("파라미터", "파라미터 없음")
-    d = params.get("파라미터2", "파라미터2 없음")
+    d = params.get("파라미ter2", "파라미터2 없음")
 
     text = f"{a} / {b} / {c} / {d}"
     return jsonify(kakao_text(text))
@@ -100,34 +99,9 @@ def google_news():
 
     return jsonify(kakao_text(result))
 
-# 5. 파라미터로 Gemini 연동하기
-@app.route("/gemini-param", methods=["POST"])
-def gemini_param():
-    data = request.get_json(silent=True) or {}
-    tt = data.get("action", {}).get("params", {}).get("파라미터", "").strip()
-
-    if not tt:
-        return jsonify(kakao_text("파라미터 값이 없습니다."))
-
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        return jsonify(kakao_text("GEMINI_API_KEY 환경변수가 설정되지 않았습니다."))
-
-    try:
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=tt
-        )
-        result_text = response.text if response.text else "응답이 비어 있습니다."
-    except Exception as e:
-        result_text = f"Gemini 호출 중 오류: {str(e)}"
-
-    return jsonify(kakao_text(result_text))
-
 
 # ========================================================
-# 6. MBTI 환상궁합 AI 스킬 (위치 상향 조정 완료!)
+# 6. MBTI 환상궁합 AI 스킬 (ChatGPT OpenAI 버전!)
 # ========================================================
 @app.route('/mbti', methods=['POST'])
 def get_mbti_match():
@@ -140,26 +114,40 @@ def get_mbti_match():
     if user_message not in mbti_list:
         return jsonify(kakao_text("올바른 MBTI 4자리를 입력해주세요! (예: INFP)"))
 
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        return jsonify(kakao_text("Render 환경변수에 GEMINI_API_KEY가 없습니다."))
+        return jsonify(kakao_text("Render 환경변수에 OPENAI_API_KEY가 설정되지 않았습니다."))
 
     try:
-        # 카카오톡 5초 제한(Timeout)을 넘기지 않기 위해 답변을 매우 핵심만 짧게 요구합니다.
-        prompt = f"MBTI 전문가로서 {user_message}와 가장 잘 맞는 환상의 궁합 MBTI 유형 딱 하나를 추천하고, 왜 잘 맞는지 핵심만 딱 2줄로 아주 짧고 빠르게 설명해줘."
+        # 카카오톡 5초 제한을 넘지 않도록 gpt-4o-mini 모델을 사용해 아주 빠르게 핵심만 받습니다.
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/center; charset=utf-8"
+        }
         
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-        )
-        ai_answer = response.text if response.text else "AI가 답변을 생성하지 못했습니다."
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "너는 유머러스한 MBTI 전문가야."},
+                {"role": "user", "content": f"내 MBTI는 {user_message}야. 나랑 가장 환상의 궁합인 MBTI 유형 딱 하나를 콕 집어 추천하고, 왜 잘 맞는지 핵심만 2줄 이내로 웃기게 설명해줘."}
+            ],
+            "max_tokens": 150
+        }
+
+        response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers, timeout=4)
+        
+        if response.status_code == 200:
+            result_json = response.json()
+            ai_answer = result_json["choices"][0]["message"]["content"].strip()
+        else:
+            ai_answer = f"GPT 서버 응답 오류 (코드 {response.status_code})"
+
     except Exception as e:
         ai_answer = f"앗, AI 서버에 문제가 생겼어요: {str(e)}"
 
     return jsonify(kakao_text(ai_answer))
 
 
-# 서버 실행 코드는 무조건 파일 맨 아래에 단 한 번만 있어야 합니다!
+# 서버 실행 코드는 파일 최하단에 위치
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
