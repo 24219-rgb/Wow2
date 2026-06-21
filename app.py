@@ -61,7 +61,7 @@ def params_check():
     a = user_request.get("timezone", "timezone 없음")
     b = user_request.get("utterance", "utterance 없음")
     c = params.get("파라미터", "파라미터 없음")
-    d = params.get("파라미ter2", "파라미터2 없음")
+    d = params.get("파라미터2", "파라미터2 없음")
 
     text = f"{a} / {b} / {c} / {d}"
     return jsonify(kakao_text(text))
@@ -101,7 +101,7 @@ def google_news():
 
 
 # ========================================================
-# 6. MBTI 환상궁합 AI 스킬 (ChatGPT OpenAI 버전!)
+# 6. MBTI 환상궁합 AI 스킬 (오픈AI 연결 완벽 수정 버전)
 # ========================================================
 @app.route('/mbti', methods=['POST'])
 def get_mbti_match():
@@ -119,35 +119,12 @@ def get_mbti_match():
         return jsonify(kakao_text("Render 환경변수에 OPENAI_API_KEY가 설정되지 않았습니다."))
 
     try:
-        # 카카오톡 5초 제한을 넘지 않도록 gpt-4o-mini 모델을 사용해 아주 빠르게 핵심만 받습니다.
+        # 헤더 형식을 application/json으로 올바르게 전송합니다.
         headers = {
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/center; charset=utf-8"
+            "Content-Type": "application/json; charset=utf-8"
         }
         
         payload = {
             "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "system", "content": "너는 유머러스한 MBTI 전문가야."},
-                {"role": "user", "content": f"내 MBTI는 {user_message}야. 나랑 가장 환상의 궁합인 MBTI 유형 딱 하나를 콕 집어 추천하고, 왜 잘 맞는지 핵심만 2줄 이내로 웃기게 설명해줘."}
-            ],
-            "max_tokens": 150
-        }
-
-        response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers, timeout=4)
-        
-        if response.status_code == 200:
-            result_json = response.json()
-            ai_answer = result_json["choices"][0]["message"]["content"].strip()
-        else:
-            ai_answer = f"GPT 서버 응답 오류 (코드 {response.status_code})"
-
-    except Exception as e:
-        ai_answer = f"앗, AI 서버에 문제가 생겼어요: {str(e)}"
-
-    return jsonify(kakao_text(ai_answer))
-
-
-# 서버 실행 코드는 파일 최하단에 위치
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+            "messages":
