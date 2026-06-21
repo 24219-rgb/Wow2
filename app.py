@@ -97,7 +97,7 @@ def google_news():
 
 
 # ========================================================
-# 6. MBTI 환상궁합 AI 스킬 (유지)
+# 6. MBTI 환상궁합 AI 스킬
 # ========================================================
 @app.route('/mbti', methods=['POST'])
 def get_mbti_match():
@@ -144,7 +144,7 @@ def get_mbti_match():
 
 
 # ========================================================
-# 7. MBTI 연애 스타일 AI 스킬 (유지)
+# 7. MBTI 연애 스타일 AI 스킬
 # ========================================================
 @app.route('/mbti-love', methods=['POST'])
 def get_mbti_love():
@@ -193,14 +193,13 @@ def get_mbti_love():
 
 
 # ========================================================
-# 8. 신규 추가: MBTI 플러팅 스타일 AI 스킬
+# 8. MBTI 플러팅 스타일 AI 스킬
 # ========================================================
 @app.route('/mbti-flirt', methods=['POST'])
 def get_mbti_flirt():
     kakao_request = request.get_json()
     user_message = kakao_request['userRequest']['utterance'].strip().upper()
 
-    # 사용자가 'ENTP 플러팅'이라고 치면 뒤에 '플러팅'을 떼고 'ENTP'만 추출합니다.
     mbti = user_message.replace("플러팅", "").strip()
 
     mbti_list = ["INFJ", "INFP", "INTJ", "INTP", "ISFJ", "ISFP", "ISTJ", "ISTP", 
