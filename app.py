@@ -97,7 +97,7 @@ def google_news():
 
 
 # ========================================================
-# 6. MBTI 환상궁합 AI 스킬 (괄호 매칭 및 줄바꿈 완전 수정 버전)
+# 6. MBTI 환상궁합 AI 스킬
 # ========================================================
 @app.route('/mbti', methods=['POST'])
 def get_mbti_match():
@@ -125,6 +125,56 @@ def get_mbti_match():
             "messages": [
                 {"role": "system", "content": "너는 유머러스한 MBTI 전문가야."},
                 {"role": "user", "content": f"내 MBTI는 {user_message}야. 나랑 가장 환상의 궁합인 MBTI 유형 딱 하나를 콕 집어 추천하고, 왜 잘 맞는지 핵심만 2줄 이내로 웃기게 설명해줘."}
+            ],
+            "max_tokens": 150
+        }
+
+        response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers, timeout=4)
+        
+        if response.status_code == 200:
+            result_json = response.json()
+            ai_answer = result_json["choices"][0]["message"]["content"].strip()
+        else:
+            ai_answer = f"GPT 서버 응답 오류 (코드 {response.status_code})"
+
+    except Exception as e:
+        ai_answer = f"앗, AI 서버에 문제가 생겼어요: {str(e)}"
+
+    return jsonify(kakao_text(ai_answer))
+
+
+# ========================================================
+# 7. 신규 추가: MBTI 연애 스타일 AI 스킬
+# ========================================================
+@app.route('/mbti-love', methods=['POST'])
+def get_mbti_love():
+    kakao_request = request.get_json()
+    user_message = kakao_request['userRequest']['utterance'].strip().upper()
+
+    # 사용자가 'ENTP 연애'라고 치면 뒤에 ' 연애'를 떼고 'ENTP'만 추출하는 영리한 장치야!
+    mbti = user_message.replace("연애", "").strip()
+
+    mbti_list = ["INFJ", "INFP", "INTJ", "INTP", "ISFJ", "ISFP", "ISTJ", "ISTP", 
+                 "ENFJ", "ENFP", "ENTJ", "ENTP", "ESFJ", "ESFP", "ESTJ", "ESTP"]
+    
+    if mbti not in mbti_list:
+        return jsonify(kakao_text("MBTI 뒤에 '연애'를 붙여서 입력해주세요! (예: INFP 연애)"))
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return jsonify(kakao_text("Render 환경변수에 OPENAI_API_KEY가 설정되지 않았습니다."))
+
+    try:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json; charset=utf-8"
+        }
+        
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "너는 팩폭을 잘하는 솔직하고 유머러스한 연애 상담사야."},
+                {"role": "user", "content": f"{mbti} 유형의 연애 스타일과 특징을 장점 하나, 단점 하나로 나누어서 3줄 이내로 핵심만 웃기게 요약해줘."}
             ],
             "max_tokens": 150
         }
